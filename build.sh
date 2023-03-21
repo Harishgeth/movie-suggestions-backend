@@ -3,6 +3,9 @@
 
 export APP_NAME="IMDB-Rating"
 export PORT=3000
+export ATLAS_URI="mongodb://user:pass@localhost:27017/?authMechanism=SCRAM-SHA-256"
+
+# source dev.env
 
 go install
 if [ $? != 0 ]; then
