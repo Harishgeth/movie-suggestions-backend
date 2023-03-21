@@ -2,6 +2,11 @@ version: "3"
 services:
     elasticsearch:
         image: "docker.elastic.co/elasticsearch/elasticsearch:8.6.2"
+        healthcheck:
+            test: curl -s http://localhost:9200/ >/dev/null || exit 1      # interval: 3s"]
+            interval: 3s
+            timeout: 3s
+            retries: 80
         environment:
             - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
             - "discovery.type=single-node"
@@ -24,7 +29,18 @@ services:
             - /var/lib/docker:/var/lib/docker:ro
             - /var/run/docker.sock:/var/run/docker.sock
 
-        
+    golang:
+        image: "softeng/movie-suggestions-api:latest"
+        build:
+            dockerfile: Dockerfile
+        depends_on:
+         elasticsearch:
+            condition: service_healthy
+        ports:
+            - "8080:8080"
+        env_file:
+            - dev.env
+
 
 volumes:
     elasticsearch_data:
