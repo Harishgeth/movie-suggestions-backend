@@ -7,4 +7,5 @@ var (
 	PORT       = os.Getenv("PORT")
 	IMDB_URL   = "http://www.imdb.com"
 	SEARCH_URL = "/find?ref_=nv_sr_fn&q=%s&s=all"
+	ATLAS_URI  = os.Getenv("ATLAS_URI")
 )
