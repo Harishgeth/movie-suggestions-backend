@@ -33,6 +33,7 @@ services:
         image: "softeng/movie-suggestions-api:latest"
         build:
             dockerfile: Dockerfile
+            context: .
         depends_on:
          elasticsearch:
             condition: service_healthy

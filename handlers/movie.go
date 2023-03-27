@@ -11,6 +11,7 @@ import (
 
 func setMovieRoutes(router *httprouter.Router) {
 	router.GET("/home-page", GetMovies)
+	//
 }
 
 // func MovieRating(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -28,5 +29,6 @@ func GetMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	rd.l.Info("Here right now")
 	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
 	movies := m.GetMovies()
+	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
 }
