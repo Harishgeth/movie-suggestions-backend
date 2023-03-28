@@ -41,8 +41,16 @@ services:
             - "8080:8080"
         env_file:
             - dev.env
+        # environment:
+        #     - APP_NAME=IMDB-Rating
+        #     - PORT=8080
+        #     - ATLAS_URI=mongodb://user:pass@mongolocal:27017/?authMechanism=SCRAM-SHA-256
+        networks:
+            - backend
 
     mongodb:
+        hostname: "mongolocal"
+        container_name: "mongolocal"
         image: mongodb/mongodb-community-server:6.0-ubi8
         environment:
             - MONGO_INITDB_ROOT_USERNAME=user
@@ -51,6 +59,10 @@ services:
             - ./mongodb_data:/data/db
         ports:
             - "27017:27017"
+        networks:
+            - backend
+networks:
+  backend:
 
 
 volumes:

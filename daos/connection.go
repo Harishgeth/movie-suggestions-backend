@@ -2,6 +2,7 @@ package daos
 
 import (
 	"context"
+	"movie-suggestions-api/config"
 	"movie-suggestions-api/utils/log"
 	"time"
 
@@ -24,7 +25,7 @@ import (
 // }
 
 func get(l *log.Logger) (*mongo.Client, context.Context) {
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://user:pass@localhost:27017/?authMechanism=SCRAM-SHA-256"))
+	client, err := mongo.NewClient(options.Client().ApplyURI(config.ATLAS_URI))
 	if err != nil {
 		l.Fatal(err)
 		// return nil, nil
