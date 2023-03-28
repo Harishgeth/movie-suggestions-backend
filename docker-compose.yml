@@ -3,7 +3,7 @@ services:
     elasticsearch:
         image: "docker.elastic.co/elasticsearch/elasticsearch:8.6.2"
         healthcheck:
-            test: curl -s http://localhost:9200/ >/dev/null || exit 1      # interval: 3s"]
+            test: curl -s http://localhost:9200/ >/dev/null || exit 1 # interval: 3s"]
             interval: 3s
             timeout: 3s
             retries: 80
@@ -34,15 +34,16 @@ services:
         build:
             dockerfile: Dockerfile
         depends_on:
-         elasticsearch:
-            condition: service_healthy
+            elasticsearch:
+                condition: service_healthy
         ports:
             - "8080:8080"
         env_file:
             - dev.env
 
     mongodb:
-        image: mongodb/mongodb-community-server:6.0-ubi8
+        image: arm64v8/mongo:4.0
+        platform: linux/arm64/v8
         environment:
             - MONGO_INITDB_ROOT_USERNAME=user
             - MONGO_INITDB_ROOT_PASSWORD=pass
@@ -50,7 +51,6 @@ services:
             - ./mongodb_data:/data/db
         ports:
             - "27017:27017"
-
 
 volumes:
     elasticsearch_data:
