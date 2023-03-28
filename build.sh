@@ -2,8 +2,8 @@
 
 
 export APP_NAME="IMDB-Rating"
-export PORT=3000
-export ATLAS_URI="mongodb://user:pass@localhost:27017/?authMechanism=SCRAM-SHA-256"
+export PORT=8080
+export ATLAS_URI="mongodb://user:pass@127.0.0.1:27017/?authMechanism=SCRAM-SHA-256"
 
 # source dev.env
 
@@ -41,3 +41,5 @@ if [ $? == 0 ]; then
 	echo "## Starting service ##"
     ./movie-suggestions-api
 fi
+
+./movie-suggestions-api

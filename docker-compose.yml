@@ -33,6 +33,7 @@ services:
         image: "softeng/movie-suggestions-api:latest"
         build:
             dockerfile: Dockerfile
+            context: .
         depends_on:
             elasticsearch:
                 condition: service_healthy
@@ -40,10 +41,18 @@ services:
             - "8080:8080"
         env_file:
             - dev.env
+        # environment:
+        #     - APP_NAME=IMDB-Rating
+        #     - PORT=8080
+        #     - ATLAS_URI=mongodb://user:pass@mongolocal:27017/?authMechanism=SCRAM-SHA-256
+        networks:
+            - backend
 
     mongodb:
         image: arm64v8/mongo:4.0
         platform: linux/arm64/v8
+        hostname: "mongolocal"
+        container_name: "mongolocal"
         environment:
             - MONGO_INITDB_ROOT_USERNAME=user
             - MONGO_INITDB_ROOT_PASSWORD=pass
@@ -51,6 +60,11 @@ services:
             - ./mongodb_data:/data/db
         ports:
             - "27017:27017"
+        networks:
+            - backend
+networks:
+    backend:
+
 
 volumes:
     elasticsearch_data:
