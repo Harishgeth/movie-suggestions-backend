@@ -11,3 +11,10 @@ type Movie struct {
 	CRR         float64  `bson:"current_recommended_rate" json:"current_recommended_rate"`
 	// Rating string `json:"rating"`
 }
+
+type ScrollDataCaptured struct {
+	UserID           string `json:"user_id"`
+	Timestamp        string `json:"timestamp"`
+	DurationOfScroll int    `json:"duration_of_scroll"`
+	PostID           string `json:"post_id"`
+}
