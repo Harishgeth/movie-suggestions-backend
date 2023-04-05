@@ -38,7 +38,7 @@ services:
             elasticsearch:
                 condition: service_healthy
         ports:
-            - "8080:8080"
+            - "3000:3000"
         env_file:
             - dev.env
         # environment:
@@ -53,9 +53,9 @@ services:
         platform: linux/arm64/v8
         hostname: "mongolocal"
         container_name: "mongolocal"
-        environment:
-            - MONGO_INITDB_ROOT_USERNAME=user
-            - MONGO_INITDB_ROOT_PASSWORD=pass
+        # environment:
+        #     - MONGO_INITDB_ROOT_USERNAME=user
+        #     - MONGO_INITDB_ROOT_PASSWORD=pass
         volumes:
             - ./mongodb_data:/data/db
         ports:
