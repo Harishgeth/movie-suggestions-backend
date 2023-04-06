@@ -26,3 +26,21 @@ func (m *Movie) GetMovies() []dtos.Movie {
 	}
 	return movies
 }
+
+func (m *Movie) GetSuggestionMovies() []dtos.Movie {
+	var movies []dtos.Movie
+	movies, err := m.moviedao.GetMoviesForSuggestionPage()
+	if err != nil {
+		m.l.Error("Faced an error while getting from db", err)
+	}
+	return movies
+}
+
+func (m *Movie) GetTrendigMovies() []dtos.Movie {
+	var movies []dtos.Movie
+	movies, err := m.moviedao.GetMoviesForTrendingPage()
+	if err != nil {
+		m.l.Error("Faced an error while getting from db", err)
+	}
+	return movies
+}
