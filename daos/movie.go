@@ -31,17 +31,17 @@ func GetMovieDao(l *log.Logger) MovieDao {
 	}
 }
 
-func GetSuggestionMovieDao(l *log.Logger) MovieDao {
-	return Movie{
-		l: l,
-	}
-}
+// func GetSuggestionMovieDao(l *log.Logger) MovieDao {
+// 	return Movie{
+// 		l: l,
+// 	}
+// }
 
-func GetTrendingMovieDao(l *log.Logger) MovieDao {
-	return Movie{
-		l: l,
-	}
-}
+// func GetTrendingMovieDao(l *log.Logger) MovieDao {
+// 	return Movie{
+// 		l: l,
+// 	}
+// }
 
 const DBNAME = "movies"
 

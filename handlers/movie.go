@@ -62,13 +62,13 @@ func GetSuggestionMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
 
-	decoder := json.NewDecoder(r.Body)
-	var scrollAnalyticsData dtos.Movie
-	err := decoder.Decode(&scrollAnalyticsData)
-	if err != nil {
-		rd.l.Error("Error while projecting scroll data ", err)
-		writeJSONMessage("Failed to display the scroll data", ERR_MSG, http.StatusBadRequest, rd)
-	}
+	// decoder := json.NewDecoder(r.Body)
+	// var scrollAnalyticsData dtos.Movie
+	// err := decoder.Decode(&scrollAnalyticsData)
+	// if err != nil {
+	// 	rd.l.Error("Error while projecting scroll data ", err)
+	// 	writeJSONMessage("Failed to display the scroll data", ERR_MSG, http.StatusBadRequest, rd)
+	// }
 }
 
 func GetTrendingMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

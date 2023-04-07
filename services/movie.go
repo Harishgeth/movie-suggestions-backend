@@ -11,10 +11,10 @@ type Movie struct {
 	moviedao daos.MovieDao
 }
 
-func NewMovie(l *log.Logger, moviedao daos.MovieDao) *Movie {
+func NewMovie(log *log.Logger, movie_dao daos.MovieDao) *Movie {
 	return &Movie{
-		l:        l,
-		moviedao: moviedao,
+		l:        log,
+		moviedao: movie_dao,
 	}
 }
 
