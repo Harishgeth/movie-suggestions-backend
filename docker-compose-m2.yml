@@ -1,0 +1,71 @@
+version: "3"
+services:
+    elasticsearch:
+        image: "docker.elastic.co/elasticsearch/elasticsearch:8.6.2"
+        healthcheck:
+            test: curl -s http://localhost:9200/ >/dev/null || exit 1 # interval: 3s"]
+            interval: 3s
+            timeout: 3s
+            retries: 80
+        environment:
+            - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+            - "discovery.type=single-node"
+            - "xpack.security.enabled= false"
+        ports:
+            - "9200:9200"
+        volumes:
+            - elasticsearch_data:/usr/share/elasticsearch/data
+
+    kibana:
+        image: "docker.elastic.co/kibana/kibana:8.6.2"
+        ports:
+            - "5601:5601"
+
+    filebeat:
+        image: "docker.elastic.co/beats/filebeat:8.6.2"
+        user: root
+        volumes:
+            - ./filebeats_config/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+            - /var/lib/docker:/var/lib/docker:ro
+            - /var/run/docker.sock:/var/run/docker.sock
+        command: filebeat -e -strict.perms=false
+
+    golang:
+        image: "softeng/movie-suggestions-api:latest"
+        build:
+            dockerfile: Dockerfile
+            context: .
+        depends_on:
+            elasticsearch:
+                condition: service_healthy
+        ports:
+            - "3000:3000"
+        env_file:
+            - dev_m2.env
+        # environment:
+        #     - APP_NAME=IMDB-Rating
+        #     - PORT=8080
+        #     - ATLAS_URI=mongodb://user:pass@mongolocal:27017/?authMechanism=SCRAM-SHA-256
+        networks:
+            - backend
+
+    mongodb:
+        image: arm64v8/mongo:4.0
+        platform: linux/arm64/v8
+        hostname: "mongolocal"
+        container_name: "mongolocal"
+        # environment:
+        #     - MONGO_INITDB_ROOT_USERNAME=user
+        #     - MONGO_INITDB_ROOT_PASSWORD=pass
+        volumes:
+            - ./mongodb_data:/data/db
+        ports:
+            - 27017:27017
+        networks:
+            - backend
+networks:
+    backend:
+
+
+volumes:
+    elasticsearch_data:

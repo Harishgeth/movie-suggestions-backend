@@ -11,16 +11,34 @@ type Movie struct {
 	moviedao daos.MovieDao
 }
 
-func NewMovie(l *log.Logger, moviedao daos.MovieDao) *Movie {
+func NewMovie(log *log.Logger, movie_dao daos.MovieDao) *Movie {
 	return &Movie{
-		l:        l,
-		moviedao: moviedao,
+		l:        log,
+		moviedao: movie_dao,
 	}
 }
 
 func (m *Movie) GetMovies() []dtos.Movie {
 	var movies []dtos.Movie
 	movies, err := m.moviedao.GetMoviesForHomePage()
+	if err != nil {
+		m.l.Error("Faced an error while getting from db", err)
+	}
+	return movies
+}
+
+func (m *Movie) GetSuggestionMovies() []dtos.Movie {
+	var movies []dtos.Movie
+	movies, err := m.moviedao.GetMoviesForSuggestionPage()
+	if err != nil {
+		m.l.Error("Faced an error while getting from db", err)
+	}
+	return movies
+}
+
+func (m *Movie) GetTrendigMovies() []dtos.Movie {
+	var movies []dtos.Movie
+	movies, err := m.moviedao.GetMoviesForTrendingPage()
 	if err != nil {
 		m.l.Error("Faced an error while getting from db", err)
 	}
