@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"movie-suggestions-api/daos"
 	"movie-suggestions-api/dtos"
@@ -30,9 +31,31 @@ func setMovieRoutes(router *httprouter.Router) {
 func GetMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	rd := logAndGetContext(w, r)
+	pageStr := r.URL.Query().Get("page")
+	if pageStr == "" {
+		rd.l.Info("The page number is not provided")
+		pageStr = "1"
+	}
+	page, _ := strconv.Atoi(pageStr)
+
+	LimitStr := r.URL.Query().Get("limit")
+	if pageStr == "" {
+		rd.l.Info("The page number is not provided")
+		LimitStr = "2"
+	}
+	limit, _ := strconv.Atoi(LimitStr)
+
+	skip := (page - 1) * limit
+
+	pagination := &dtos.PaginationSpecifics{
+		Page:  page,
+		Limit: limit,
+		Skip:  skip,
+	}
+
 	rd.l.Info("Here right now")
 	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
-	movies := m.GetMovies()
+	movies := m.GetMovies(pagination)
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
 }
@@ -58,7 +81,7 @@ func GetSuggestionMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	rd := logAndGetContext(w, r)
 	rd.l.Info("Here right now")
 	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
-	movies := m.GetMovies()
+	movies := m.GetSuggestionMovies()
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
 
@@ -76,7 +99,7 @@ func GetTrendingMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	rd := logAndGetContext(w, r)
 	rd.l.Info("Here right now")
 	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
-	movies := m.GetMovies()
+	movies := m.GetTrendingMovies()
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
 }

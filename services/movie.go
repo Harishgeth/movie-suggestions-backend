@@ -18,9 +18,9 @@ func NewMovie(log *log.Logger, movie_dao daos.MovieDao) *Movie {
 	}
 }
 
-func (m *Movie) GetMovies() []dtos.Movie {
+func (m *Movie) GetMovies(pagination *dtos.PaginationSpecifics) []dtos.Movie {
 	var movies []dtos.Movie
-	movies, err := m.moviedao.GetMoviesForHomePage()
+	movies, err := m.moviedao.GetMoviesForHomePage(pagination)
 	if err != nil {
 		m.l.Error("Faced an error while getting from db", err)
 	}
@@ -36,7 +36,7 @@ func (m *Movie) GetSuggestionMovies() []dtos.Movie {
 	return movies
 }
 
-func (m *Movie) GetTrendigMovies() []dtos.Movie {
+func (m *Movie) GetTrendingMovies() []dtos.Movie {
 	var movies []dtos.Movie
 	movies, err := m.moviedao.GetMoviesForTrendingPage()
 	if err != nil {

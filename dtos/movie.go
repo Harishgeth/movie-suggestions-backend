@@ -19,6 +19,13 @@ type ScrollDataCaptured struct {
 	PostID           string `json:"post_id"`
 }
 
+type PaginationSpecifics struct {
+	Page int `json:"page"`
+	// Count int `json:"count"`
+	Skip  int `json:"skip"`
+	Limit int `json:"limit"`
+}
+
 // type ScrollDataShow struct {
 // 	MovieID     string   `bson:"movie_id" json:"movie_id"`
 // 	Title       string   `bson:"title" json:"title"`

@@ -5,10 +5,11 @@ import (
 	"movie-suggestions-api/utils/log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MovieDao interface {
-	GetMoviesForHomePage() ([]dtos.Movie, error)
+	GetMoviesForHomePage(pagination *dtos.PaginationSpecifics) ([]dtos.Movie, error)
 	GetMoviesForSuggestionPage() ([]dtos.Movie, error)
 	GetMoviesForTrendingPage() ([]dtos.Movie, error)
 }
@@ -47,7 +48,7 @@ const DBNAME = "movies"
 
 const DOCNAME = "movies"
 
-func (dao Movie) GetMoviesForHomePage() ([]dtos.Movie, error) {
+func (dao Movie) GetMoviesForHomePage(pagination *dtos.PaginationSpecifics) ([]dtos.Movie, error) {
 	client, ctx := get(dao.l)
 	defer client.Disconnect(ctx)
 
@@ -57,8 +58,12 @@ func (dao Movie) GetMoviesForHomePage() ([]dtos.Movie, error) {
 		dao.l.Error("Collection is nil")
 		panic("Collection is nil")
 	}
+	findOptions := options.Find()
 
-	cursor, err := coll.Find(ctx, bson.M{})
+	findOptions.SetSkip(int64(pagination.Skip))
+	findOptions.SetLimit(int64(pagination.Limit))
+
+	cursor, err := coll.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
 		panic(err)
 	}
