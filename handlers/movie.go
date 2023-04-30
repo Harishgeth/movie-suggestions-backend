@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -17,7 +18,32 @@ func setMovieRoutes(router *httprouter.Router) {
 	router.POST("/record-scroll", RecordScroll)
 	router.GET("/suggestion-page", GetSuggestionMovies)
 	router.GET("/trending-page", GetTrendingMovies)
+	router.POST("/capture-data-to-index", CaptureDataToIndex)
 }
+
+// type Log struct {
+// 	ContainerCreatedAt string `json:"container_created_at"`
+// 	ContainerID        string `json:"container_id"`
+// 	ContainerName      string `json:"container_name"`
+// 	Host               string `json:"host"`
+// 	Image              string `json:"image"`
+// 	Label              struct {
+// 		ConfigHash         string `json:"com.docker.compose.config-hash"`
+// 		ContainerNumber    string `json:"com.docker.compose.container-number"`
+// 		DependsOn          string `json:"com.docker.compose.depends_on"`
+// 		ComposeImage       string `json:"com.docker.compose.image"`
+// 		OneOff             string `json:"com.docker.compose.oneoff"`
+// 		Project            string `json:"com.docker.compose.project"`
+// 		ProjectConfigFiles string `json:"com.docker.compose.project.config_files"`
+// 		ProjectWorkingDir  string `json:"com.docker.compose.project.working_dir"`
+// 		Service            string `json:"com.docker.compose.service"`
+// 		Version            string `json:"com.docker.compose.version"`
+// 	} `json:"label"`
+// 	Message    string `json:"message"`
+// 	SourceType string `json:"source_type"`
+// 	Stream     string `json:"stream"`
+// 	Timestamp  string `json:"timestamp"`
+// }
 
 // func MovieRating(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // 	rd := logAndGetContext(w, r)
@@ -71,7 +97,8 @@ func RecordScroll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		rd.l.Error("Error while decoding the scroll data", err)
 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
 	}
-	rd.l.Info("The content of scrollAnalyticsData", scrollAnalyticsData)
+	scrollBytes, _ := json.Marshal(scrollAnalyticsData)
+	rd.l.Info("The content of scrollAnalyticsData:", string(scrollBytes))
 	writeJSONMessage("Successfully recorded the scroll data", MSG, http.StatusOK, rd)
 
 }
@@ -102,4 +129,18 @@ func GetTrendingMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	movies := m.GetTrendingMovies()
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
+}
+
+func CaptureDataToIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	rd := logAndGetContext(w, r)
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
+	}
+	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
+	err = m.FilterAndDigestLogIntoElasticSearch(string(b))
+	if err != nil {
+		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
+	}
 }

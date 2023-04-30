@@ -1,0 +1,11 @@
+[sources.in]
+type = "docker_logs"
+
+
+
+[sinks.http]
+inputs =["in"]
+type = "http"
+uri = "http://golang:8080/capture-data-to-index"
+method = "post"
+encoding.codec="json"
