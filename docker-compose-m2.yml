@@ -29,7 +29,7 @@ services:
             - /var/lib/docker:/var/lib/docker:ro
             - /var/run/docker.sock:/var/run/docker.sock
         command: filebeat -e -strict.perms=false
-        
+
     vector:
         image: "timberio/vector:0.29.1-debian"
         user: root
@@ -49,7 +49,7 @@ services:
             elasticsearch:
                 condition: service_healthy
         ports:
-            - "3000:3000"
+            - "3000:8080"
         env_file:
             - dev_m2.env
         # environment:
