@@ -21,6 +21,13 @@ func NewMovie(log *log.Logger, movie_dao daos.MovieDao) *Movie {
 	}
 }
 
+func GenreMovie(log *log.Logger, movie_dao daos.MovieDao) *Movie {
+	return &Movie{
+		l:        log,
+		moviedao: movie_dao,
+	}
+}
+
 func (m *Movie) extractJsonFromLogString(logStr string) *dtos.ScrollDataCaptured {
 
 	re := regexp.MustCompile(`\{.*\}`)
@@ -80,4 +87,14 @@ func (m *Movie) FilterAndDigestLogIntoElasticSearch(log_entity string) error {
 		}
 	}
 	return nil
+}
+
+func (m *Movie) GetMoviesByGenre() []dtos.Movie {
+	var movies []dtos.Movie
+	movies, err := m.moviedao.GetMoviesByGenre()
+	if err != nil {
+		m.l.Error("Faced an error while getting from db", err)
+	}
+
+	return movies
 }

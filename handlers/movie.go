@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -19,6 +21,7 @@ func setMovieRoutes(router *httprouter.Router) {
 	router.GET("/suggestion-page", GetSuggestionMovies)
 	router.GET("/trending-page", GetTrendingMovies)
 	router.POST("/capture-data-to-index", CaptureDataToIndex)
+	router.GET("/movies-genre", GetMoviesByGenre)
 }
 
 // type Log struct {
@@ -143,4 +146,24 @@ func CaptureDataToIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	if err != nil {
 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
 	}
+}
+
+func GetMoviesByGenre(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	rd := logAndGetContext(w, r)
+	rd.l.Info("Here right now")
+	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
+	movies := m.GetMoviesByGenre()
+
+	ctx := context.Background()
+
+	// Access the collection
+	collection := client.Database("movies").Collection("genre")
+
+	// Do something with the collection, such as insert a document
+	_, err = collection.InsertOne(ctx, map[string]interface{}{"name": "John Doe"})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }

@@ -12,6 +12,7 @@ type MovieDao interface {
 	GetMoviesForHomePage(pagination *dtos.PaginationSpecifics) ([]dtos.Movie, error)
 	GetMoviesForSuggestionPage() ([]dtos.Movie, error)
 	GetMoviesForTrendingPage() ([]dtos.Movie, error)
+	GetMoviesByGenre() ([]dtos.Movie, error)
 }
 
 // type SuggestionMovieDao interface {
@@ -125,5 +126,30 @@ func (dao Movie) GetMoviesForTrendingPage() ([]dtos.Movie, error) {
 	}
 
 	return res, nil
+
+}
+
+func (dao Movie) GetMoviesByGenre() ([]dtos.Movie, error) {
+	client, ctx := get(dao.l)
+	defer client.Disconnect(ctx)
+
+	res := []dtos.Movie{}
+	coll := client.Database("movies").Collection("genre")
+	if coll == nil {
+		dao.l.Error("Collection is nil")
+		panic("Collection is nil")
+	}
+	// sort.Sort(ByGenre(movies))
+
+	// cursor, err := coll.Find(ctx, bson.M{})
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer cursor.Close(ctx)
+	// if err = cursor.All(ctx, &res); err != nil {
+	// 	panic(err)
+	// }
+
+	// return res, nil
 
 }
