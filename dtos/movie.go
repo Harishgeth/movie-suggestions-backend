@@ -12,16 +12,15 @@ type Movie struct {
 	// Rating string `json:"rating"`
 }
 
-type ScrollDataCaptured struct {
-	UserID           string `json:"user_id"`
-	Timestamp        string `json:"timestamp"`
-	DurationOfScroll int    `json:"duration_of_scroll"`
-	PostID           string `json:"post_id"`
-}
+// type ScrollDataCaptured struct {
+// 	UserID           string    `json:"user_id"`
+// 	Timestamp        time.Time `json:"timestamp"`
+// 	DurationOfScroll int       `json:"duration_of_scroll"`
+// 	PostID           string    `json:"post_id"`
+// }
 
 type PaginationSpecifics struct {
-	Page int `json:"page"`
-	// Count int `json:"count"`
+	Page  int `json:"page"`
 	Skip  int `json:"skip"`
 	Limit int `json:"limit"`
 }

@@ -8,6 +8,7 @@ import (
 
 	"movie-suggestions-api/daos"
 	"movie-suggestions-api/dtos"
+	elasticDao "movie-suggestions-api/elasticdao"
 	"movie-suggestions-api/services"
 
 	"github.com/julienschmidt/httprouter"
@@ -80,7 +81,7 @@ func GetMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	rd.l.Info("Here right now")
-	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
+	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
 	movies := m.GetMovies(pagination)
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
@@ -96,6 +97,7 @@ func RecordScroll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if err != nil {
 		rd.l.Error("Error while decoding the scroll data", err)
 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
+		return
 	}
 	scrollBytes, _ := json.Marshal(scrollAnalyticsData)
 	rd.l.Info("The content of scrollAnalyticsData:", string(scrollBytes))
@@ -107,7 +109,7 @@ func GetSuggestionMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 
 	rd := logAndGetContext(w, r)
 	rd.l.Info("Here right now")
-	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
+	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
 	movies := m.GetSuggestionMovies()
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
@@ -125,7 +127,7 @@ func GetTrendingMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 
 	rd := logAndGetContext(w, r)
 	rd.l.Info("Here right now")
-	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
+	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
 	movies := m.GetTrendingMovies()
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
@@ -138,7 +140,7 @@ func CaptureDataToIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	if err != nil {
 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
 	}
-	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
+	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
 	err = m.FilterAndDigestLogIntoElasticSearch(string(b))
 	if err != nil {
 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)

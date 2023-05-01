@@ -1,0 +1,475 @@
+diff --git a/config/config.go b/config/config.go
+index fb047c0..0816388 100644
+--- a/config/config.go
++++ b/config/config.go
+@@ -3,9 +3,10 @@ package config
+ import "os"
+ 
+ var (
+-	AUTH_TOKEN = os.Getenv("AUTH_TOKEN")
+-	PORT       = os.Getenv("PORT")
+-	IMDB_URL   = "http://www.imdb.com"
+-	SEARCH_URL = "/find?ref_=nv_sr_fn&q=%s&s=all"
+-	ATLAS_URI  = os.Getenv("ATLAS_URI")
++	AUTH_TOKEN     = os.Getenv("AUTH_TOKEN")
++	PORT           = os.Getenv("PORT")
++	ATLAS_URI      = os.Getenv("ATLAS_URI")
++	ELASTIC_URI    = os.Getenv("ELASTIC_URI")
++	MOVIE_INDEX    = "movie_index"
++	ES_TIME_FORMAT = "2006-01-02 15:04:05.000"
+ )
+diff --git a/dev.env b/dev.env
+index 4b8fe8a..9f747b9 100644
+--- a/dev.env
++++ b/dev.env
+@@ -2,3 +2,4 @@
+ APP_NAME="IMDB-Rating"
+ PORT=8080
+ ATLAS_URI="mongodb://user:pass@mongolocal:27017/?authMechanism=SCRAM-SHA-256"
++ELASTIC_URI="http://elasticsearch:9200"
+\ No newline at end of file
+diff --git a/dev_m2.env b/dev_m2.env
+index ef2f852..a647a0e 100644
+--- a/dev_m2.env
++++ b/dev_m2.env
+@@ -2,3 +2,4 @@
+ APP_NAME="IMDB-Rating"
+ PORT=8080
+ ATLAS_URI="mongodb://mongolocal:27017/"
++ELASTIC_URI="http://elasticsearch:9200"
+\ No newline at end of file
+diff --git a/docker-compose-m2.yml b/docker-compose-m2.yml
+index 2e611e6..39cc320 100644
+--- a/docker-compose-m2.yml
++++ b/docker-compose-m2.yml
+@@ -15,11 +15,17 @@ services:
+             - "9200:9200"
+         volumes:
+             - elasticsearch_data:/usr/share/elasticsearch/data
++        networks:
++            - backend
+ 
+     kibana:
+         image: "docker.elastic.co/kibana/kibana:8.6.2"
+         ports:
+             - "5601:5601"
++        environment:
++            - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
++        networks:
++            - backend
+ 
+     filebeat:
+         image: "docker.elastic.co/beats/filebeat:8.6.2"
+diff --git a/docker-compose.yml b/docker-compose.yml
+index a80dddf..981adb2 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -15,11 +15,17 @@ services:
+             - "9200:9200"
+         volumes:
+             - elasticsearch_data:/usr/share/elasticsearch/data
++        networks:
++            - backend
+ 
+     kibana:
+         image: "docker.elastic.co/kibana/kibana:8.6.2"
+         ports:
+             - "5601:5601"
++        environment:
++            - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
++        networks:
++            - backend
+ 
+     filebeat:
+         image: "docker.elastic.co/beats/filebeat:8.6.2"
+diff --git a/dtos/movie.go b/dtos/movie.go
+index 1ecb135..e8b130b 100644
+--- a/dtos/movie.go
++++ b/dtos/movie.go
+@@ -12,16 +12,15 @@ type Movie struct {
+ 	// Rating string `json:"rating"`
+ }
+ 
+-type ScrollDataCaptured struct {
+-	UserID           string `json:"user_id"`
+-	Timestamp        string `json:"timestamp"`
+-	DurationOfScroll int    `json:"duration_of_scroll"`
+-	PostID           string `json:"post_id"`
+-}
++// type ScrollDataCaptured struct {
++// 	UserID           string    `json:"user_id"`
++// 	Timestamp        time.Time `json:"timestamp"`
++// 	DurationOfScroll int       `json:"duration_of_scroll"`
++// 	PostID           string    `json:"post_id"`
++// }
+ 
+ type PaginationSpecifics struct {
+-	Page int `json:"page"`
+-	// Count int `json:"count"`
++	Page  int `json:"page"`
+ 	Skip  int `json:"skip"`
+ 	Limit int `json:"limit"`
+ }
+diff --git a/dtos/scrolldata.go b/dtos/scrolldata.go
+new file mode 100644
+index 0000000..e1f1578
+--- /dev/null
++++ b/dtos/scrolldata.go
+@@ -0,0 +1,63 @@
++package dtos
++
++import (
++	"encoding/json"
++	"movie-suggestions-api/config"
++	"time"
++)
++
++type ScrollDataCaptured struct {
++	UserID           string    `json:"user_id"`
++	Timestamp        time.Time `json:"timestamp"`
++	DurationOfScroll int       `json:"duration_of_scroll"`
++	PostID           string    `json:"post_id"`
++}
++
++type ScrollDataCapturedElasticFormat struct {
++	UserID           string `json:"user_id"`
++	PostID           string `json:"post_id"`
++	DurationOfScroll int    `json:"duration_of_scroll"`
++	Timestamp        string `json:"timestamp"`
++}
++
++// MarshalJSON customizes JSON marshaling for the ScrollDataCaptured struct.
++func (s *ScrollDataCaptured) MarshalJSON() ([]byte, error) {
++	type Alias ScrollDataCaptured // Create an alias to avoid infinite recursion.
++	return json.Marshal(&struct {
++		*Alias
++		Timestamp string `json:"timestamp"`
++	}{
++		Alias:     (*Alias)(s),
++		Timestamp: s.Timestamp.Format(time.RFC3339),
++	})
++}
++
++// UnmarshalJSON customizes JSON unmarshaling for the ScrollDataCaptured struct.
++func (s *ScrollDataCaptured) UnmarshalJSON(data []byte) error {
++	type Alias ScrollDataCaptured // Create an alias to avoid infinite recursion.
++	aux := &struct {
++		*Alias
++		Timestamp string `json:"timestamp"`
++	}{
++		Alias: (*Alias)(s),
++	}
++	if err := json.Unmarshal(data, &aux); err != nil {
++		return err
++	}
++	timestamp, err := time.Parse(time.RFC3339, aux.Timestamp)
++	if err != nil {
++		return err
++	}
++	s.Timestamp = timestamp
++	return nil
++}
++
++func (s *ScrollDataCaptured) CopyForElasticSearch() *ScrollDataCapturedElasticFormat {
++	return &ScrollDataCapturedElasticFormat{
++		UserID:           s.UserID,
++		PostID:           s.PostID,
++		DurationOfScroll: s.DurationOfScroll,
++		Timestamp:        s.Timestamp.Format(config.ES_TIME_FORMAT),
++	}
++
++}
+diff --git a/elasticdao/elasticdao.go b/elasticdao/elasticdao.go
+new file mode 100644
+index 0000000..571a126
+--- /dev/null
++++ b/elasticdao/elasticdao.go
+@@ -0,0 +1,129 @@
++package elasticDao
++
++import (
++	"bytes"
++	"encoding/json"
++	"fmt"
++	"io"
++	"movie-suggestions-api/utils/log"
++
++	"movie-suggestions-api/config"
++	"movie-suggestions-api/dtos"
++	"net/http"
++)
++
++type MovieElasticDao interface {
++	CreateMovieIndexIfNotExists() error
++	PutDataInElasticSearch(scrollData *dtos.ScrollDataCaptured) error
++}
++
++type moviesElasticOps struct {
++	l *log.Logger
++}
++
++func GetMovieDao(l *log.Logger) MovieElasticDao {
++	return &moviesElasticOps{
++		l: l,
++	}
++}
++
++func (m *moviesElasticOps) CreateMovieIndexIfNotExists() error {
++	// Elasticsearch URL and index name
++	esURL := config.ELASTIC_URI
++	indexName := config.MOVIE_INDEX
++
++	// Check if index exists
++	resp, err := http.Head(fmt.Sprintf("%s/%s", esURL, indexName))
++	if err != nil {
++		m.l.Error("Error converting index mapping to JSON:", err)
++		return err
++	}
++
++	// If index does not exist, create it
++	if resp.StatusCode == http.StatusNotFound {
++		// Define index mapping
++		indexMapping := map[string]interface{}{
++			"mappings": map[string]interface{}{
++				"properties": map[string]interface{}{
++					"user_id": map[string]interface{}{
++						"type": "keyword",
++					},
++					"timestamp": map[string]interface{}{
++						"type":   "date",
++						"format": "yyyy-MM-dd HH:mm:ss",
++					},
++					"duration_of_scroll": map[string]interface{}{
++						"type": "integer",
++					},
++					"post_id": map[string]interface{}{
++						"type": "keyword",
++					},
++				},
++			},
++		}
++
++		// Convert mapping to JSON bytes
++		indexMappingBytes, err := json.Marshal(indexMapping)
++		if err != nil {
++			m.l.Info("Error converting index mapping to JSON:", err)
++			return err
++		}
++		m.l.Info("Elasticsearch specifics: ", esURL, indexName, fmt.Sprintf("%s/%s", esURL, indexName))
++
++		// Send PUT request to create index with mapping
++		req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/%s", esURL, indexName), bytes.NewBuffer(indexMappingBytes))
++		if err != nil {
++			m.l.Error("Error creating request:", err)
++			return err
++		}
++		req.Header.Set("Content-Type", "application/json")
++		_, err = http.DefaultClient.Do(req)
++		if err != nil {
++			m.l.Error("Error creating index:", err)
++			return err
++		}
++		m.l.Info("Index created successfully")
++	}
++	return nil
++}
++
++func (m *moviesElasticOps) PutDataInElasticSearch(scrollData *dtos.ScrollDataCaptured) error {
++	// Create an instance of the ScrollDataCaptured struct
++	esURL := config.ELASTIC_URI
++	indexName := config.MOVIE_INDEX
++
++	// Convert struct to JSON bytes
++	scrollDataBytes, err := json.Marshal(scrollData.CopyForElasticSearch())
++	if err != nil {
++		m.l.Error("Error converting struct to JSON:", err)
++		return err
++	}
++	m.l.Info("Elasticsearch specifics: ", esURL, indexName, fmt.Sprintf("%s/%s", esURL, indexName), string(scrollDataBytes))
++
++	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s/_doc", esURL, indexName), bytes.NewBuffer(scrollDataBytes))
++	if err != nil {
++		m.l.Error("Error creating request:", err)
++		return err
++	}
++	req.Header.Set("Content-Type", "application/json")
++	resp, err := http.DefaultClient.Do(req)
++	if err != nil {
++		m.l.Error("Error adding document to index:", err)
++		return err
++	}
++	defer resp.Body.Close()
++
++	// Check response status code
++	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
++		m.l.Info("Document added to index successfully")
++	} else {
++		errBody, err := io.ReadAll(resp.Body)
++		if err != nil {
++			m.l.Error("Unable to read the body of failure to insert reason to elasticsearch")
++		}
++		m.l.Error("Error adding document to index:", resp.StatusCode, string(errBody))
++		return err
++	}
++	return nil
++
++}
+diff --git a/handlers/movie.go b/handlers/movie.go
+index 196629a..dc1a5f7 100644
+--- a/handlers/movie.go
++++ b/handlers/movie.go
+@@ -8,6 +8,7 @@ import (
+ 
+ 	"movie-suggestions-api/daos"
+ 	"movie-suggestions-api/dtos"
++	elasticDao "movie-suggestions-api/elasticdao"
+ 	"movie-suggestions-api/services"
+ 
+ 	"github.com/julienschmidt/httprouter"
+@@ -80,7 +81,7 @@ func GetMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+ 	}
+ 
+ 	rd.l.Info("Here right now")
+-	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
++	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
+ 	movies := m.GetMovies(pagination)
+ 	rd.l.Info("The content of movies", movies)
+ 	writeJSONStruct(movies, http.StatusOK, rd)
+@@ -96,6 +97,7 @@ func RecordScroll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+ 	if err != nil {
+ 		rd.l.Error("Error while decoding the scroll data", err)
+ 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
++		return
+ 	}
+ 	scrollBytes, _ := json.Marshal(scrollAnalyticsData)
+ 	rd.l.Info("The content of scrollAnalyticsData:", string(scrollBytes))
+@@ -107,7 +109,7 @@ func GetSuggestionMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
+ 
+ 	rd := logAndGetContext(w, r)
+ 	rd.l.Info("Here right now")
+-	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
++	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
+ 	movies := m.GetSuggestionMovies()
+ 	rd.l.Info("The content of movies", movies)
+ 	writeJSONStruct(movies, http.StatusOK, rd)
+@@ -125,7 +127,7 @@ func GetTrendingMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Para
+ 
+ 	rd := logAndGetContext(w, r)
+ 	rd.l.Info("Here right now")
+-	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
++	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
+ 	movies := m.GetTrendingMovies()
+ 	rd.l.Info("The content of movies", movies)
+ 	writeJSONStruct(movies, http.StatusOK, rd)
+@@ -138,7 +140,7 @@ func CaptureDataToIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Par
+ 	if err != nil {
+ 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
+ 	}
+-	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l))
++	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
+ 	err = m.FilterAndDigestLogIntoElasticSearch(string(b))
+ 	if err != nil {
+ 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
+diff --git a/main.go b/main.go
+index 93702e0..2b09bc0 100644
+--- a/main.go
++++ b/main.go
+@@ -1,10 +1,10 @@
+ package main
+ 
+ import (
+-	"fmt"
+ 	"net/http"
+ 
+ 	"movie-suggestions-api/config"
++	elasticDao "movie-suggestions-api/elasticdao"
+ 	"movie-suggestions-api/handlers"
+ 	"movie-suggestions-api/utils/log"
+ )
+@@ -12,9 +12,12 @@ import (
+ func main() {
+ 
+ 	l := log.NewLogger("")
++	elasticDao := elasticDao.GetMovieDao(l)
++	err := elasticDao.CreateMovieIndexIfNotExists()
++	if err != nil {
++		l.Fatal("Error creating movie index: ", err)
++	}
+ 	// connectToMongodb(l)
+-	fmt.Println(config.ATLAS_URI)
+-
+ 	l.Info("Port: ", config.PORT)
+ 	http.ListenAndServe(":"+config.PORT, handlers.GetRouter())
+ }
+diff --git a/services/movie.go b/services/movie.go
+index 657f51f..9e5ceb7 100644
+--- a/services/movie.go
++++ b/services/movie.go
+@@ -4,24 +4,27 @@ import (
+ 	"encoding/json"
+ 	"movie-suggestions-api/daos"
+ 	"movie-suggestions-api/dtos"
++	elasticDao "movie-suggestions-api/elasticdao"
+ 	"movie-suggestions-api/utils/log"
+ 	"regexp"
+ 	"strings"
+ )
+ 
+ type Movie struct {
+-	l        *log.Logger
+-	moviedao daos.MovieDao
++	l          *log.Logger
++	moviedao   daos.MovieDao
++	elasticDao elasticDao.MovieElasticDao
+ }
+ 
+-func NewMovie(log *log.Logger, movie_dao daos.MovieDao) *Movie {
++func NewMovie(log *log.Logger, movie_dao daos.MovieDao, elasticDao elasticDao.MovieElasticDao) *Movie {
+ 	return &Movie{
+-		l:        log,
+-		moviedao: movie_dao,
++		l:          log,
++		moviedao:   movie_dao,
++		elasticDao: elasticDao,
+ 	}
+ }
+ 
+-func (m *Movie) extractJsonFromLogString(logStr string) *dtos.ScrollDataCaptured {
++func (m *Movie) extractJsonFromLogString(logStr string) (*dtos.ScrollDataCaptured, error) {
+ 
+ 	re := regexp.MustCompile(`\{.*\}`)
+ 	jsonStr := re.FindString(logStr)
+@@ -30,12 +33,12 @@ func (m *Movie) extractJsonFromLogString(logStr string) *dtos.ScrollDataCaptured
+ 	err := json.Unmarshal([]byte(jsonStr), &jsonData)
+ 	if err != nil {
+ 		m.l.Error("Error parsing JSON:", err)
+-		return nil
++		return nil, err
+ 	}
+ 
+ 	scrollBytes, _ := json.Marshal(jsonData)
+ 	m.l.Info("Parsed scrolldata content:", string(scrollBytes))
+-	return &jsonData
++	return &jsonData, nil
+ }
+ 
+ func (m *Movie) GetMovies(pagination *dtos.PaginationSpecifics) []dtos.Movie {
+@@ -75,7 +78,17 @@ func (m *Movie) FilterAndDigestLogIntoElasticSearch(log_entity string) error {
+ 		}
+ 		for i := 0; i < len(dockerLogs); i++ {
+ 			if strings.Contains(dockerLogs[i].Message, "scrollAnalyticsData:") {
+-				_ = m.extractJsonFromLogString(dockerLogs[i].Message)
++				moviedatapoint, err := m.extractJsonFromLogString(dockerLogs[i].Message)
++				if err != nil {
++					m.l.Error("Error while extracting json from log string", err)
++					return err
++				}
++				err = m.elasticDao.PutDataInElasticSearch(moviedatapoint)
++				if err != nil {
++					m.l.Error("Error while putting data in elastic search", err)
++					return err
++				}
++				m.l.Info("Successfully put data in elastic search")
+ 			}
+ 		}
+ 	}
