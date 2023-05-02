@@ -22,39 +22,6 @@ func setMovieRoutes(router *httprouter.Router) {
 	router.POST("/capture-data-to-index", CaptureDataToIndex)
 }
 
-// type Log struct {
-// 	ContainerCreatedAt string `json:"container_created_at"`
-// 	ContainerID        string `json:"container_id"`
-// 	ContainerName      string `json:"container_name"`
-// 	Host               string `json:"host"`
-// 	Image              string `json:"image"`
-// 	Label              struct {
-// 		ConfigHash         string `json:"com.docker.compose.config-hash"`
-// 		ContainerNumber    string `json:"com.docker.compose.container-number"`
-// 		DependsOn          string `json:"com.docker.compose.depends_on"`
-// 		ComposeImage       string `json:"com.docker.compose.image"`
-// 		OneOff             string `json:"com.docker.compose.oneoff"`
-// 		Project            string `json:"com.docker.compose.project"`
-// 		ProjectConfigFiles string `json:"com.docker.compose.project.config_files"`
-// 		ProjectWorkingDir  string `json:"com.docker.compose.project.working_dir"`
-// 		Service            string `json:"com.docker.compose.service"`
-// 		Version            string `json:"com.docker.compose.version"`
-// 	} `json:"label"`
-// 	Message    string `json:"message"`
-// 	SourceType string `json:"source_type"`
-// 	Stream     string `json:"stream"`
-// 	Timestamp  string `json:"timestamp"`
-// }
-
-// func MovieRating(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-// 	rd := logAndGetContext(w, r)
-// 	m := services.NewMovieRating(rd.l)
-
-// 	movies := m.GetRating(r.FormValue("name"))
-
-// 	writeJSONStruct(movies, http.StatusOK, rd)
-// }
-
 func GetMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	rd := logAndGetContext(w, r)
@@ -66,8 +33,8 @@ func GetMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	page, _ := strconv.Atoi(pageStr)
 
 	LimitStr := r.URL.Query().Get("limit")
-	if pageStr == "" {
-		rd.l.Info("The page number is not provided")
+	if LimitStr == "" {
+		rd.l.Info("The count is not provided")
 		LimitStr = "2"
 	}
 	limit, _ := strconv.Atoi(LimitStr)
@@ -80,7 +47,6 @@ func GetMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		Skip:  skip,
 	}
 
-	rd.l.Info("Here right now")
 	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
 	movies := m.GetMovies(pagination)
 	rd.l.Info("The content of movies", movies)
@@ -108,27 +74,73 @@ func RecordScroll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func GetSuggestionMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	rd := logAndGetContext(w, r)
-	rd.l.Info("Here right now")
+	pageStr := r.URL.Query().Get("page")
+	if pageStr == "" {
+		rd.l.Info("The page number is not provided")
+		pageStr = "1"
+	}
+	page, _ := strconv.Atoi(pageStr)
+
+	LimitStr := r.URL.Query().Get("limit")
+	if LimitStr == "" {
+		rd.l.Info("The limit is not provided")
+		LimitStr = "2"
+	}
+	limit, _ := strconv.Atoi(LimitStr)
+
+	skip := (page - 1) * limit
+
+	pagination := &dtos.PaginationSpecifics{
+		Page:  page,
+		Limit: limit,
+		Skip:  skip,
+	}
+
+	user := r.URL.Query().Get("userid")
+	if user == "" {
+		rd.l.Info("The User ID is not provided")
+		writeJSONMessage("Please provide a valid userID", ERR_MSG, http.StatusBadRequest, rd)
+		return
+	}
 	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
-	movies := m.GetSuggestionMovies()
+	movies, err := m.GetSuggestionMovies(pagination, user)
+	if err != nil {
+		writeJSONMessage("Something broke while getting the data", ERR_MSG, http.StatusInternalServerError, rd)
+	}
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
-
-	// decoder := json.NewDecoder(r.Body)
-	// var scrollAnalyticsData dtos.Movie
-	// err := decoder.Decode(&scrollAnalyticsData)
-	// if err != nil {
-	// 	rd.l.Error("Error while projecting scroll data ", err)
-	// 	writeJSONMessage("Failed to display the scroll data", ERR_MSG, http.StatusBadRequest, rd)
-	// }
 }
 
 func GetTrendingMovies(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	rd := logAndGetContext(w, r)
-	rd.l.Info("Here right now")
+	pageStr := r.URL.Query().Get("page")
+	if pageStr == "" {
+		rd.l.Info("The page number is not provided")
+		pageStr = "1"
+	}
+	page, _ := strconv.Atoi(pageStr)
+
+	LimitStr := r.URL.Query().Get("limit")
+	if LimitStr == "" {
+		rd.l.Info("The limit is not provided")
+		LimitStr = "2"
+	}
+	limit, _ := strconv.Atoi(LimitStr)
+
+	skip := (page - 1) * limit
+
+	pagination := &dtos.PaginationSpecifics{
+		Page:  page,
+		Limit: limit,
+		Skip:  skip,
+	}
 	m := services.NewMovie(rd.l, daos.GetMovieDao(rd.l), elasticDao.GetMovieDao(rd.l))
-	movies := m.GetTrendingMovies()
+	movies, err := m.GetTrendingMovies(pagination)
+	if err != nil {
+		writeJSONMessage("Something broke while getting the data", ERR_MSG, http.StatusInternalServerError, rd)
+		return
+	}
 	rd.l.Info("The content of movies", movies)
 	writeJSONStruct(movies, http.StatusOK, rd)
 }
@@ -145,4 +157,6 @@ func CaptureDataToIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	if err != nil {
 		writeJSONMessage("Failed to record the data", ERR_MSG, http.StatusBadRequest, rd)
 	}
+	writeJSONMessage("Success", MSG, http.StatusOK, rd)
+
 }

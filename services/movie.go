@@ -50,22 +50,33 @@ func (m *Movie) GetMovies(pagination *dtos.PaginationSpecifics) []dtos.Movie {
 	return movies
 }
 
-func (m *Movie) GetSuggestionMovies() []dtos.Movie {
-	var movies []dtos.Movie
-	movies, err := m.moviedao.GetMoviesForSuggestionPage()
+func (m *Movie) GetSuggestionMovies(pagination *dtos.PaginationSpecifics, userid string) ([]dtos.Movie, error) {
+
+	suggestedPostIDs, err := m.elasticDao.GetSuggestionsPageSortOrder(userid, pagination.Page, pagination.Limit)
+	if err != nil {
+		m.l.Error("Failed to get the movies sort order from Elasticsearch:", err)
+		return nil, err
+	}
+	movies, err := m.moviedao.GetMoviesByPostIDs(suggestedPostIDs)
 	if err != nil {
 		m.l.Error("Faced an error while getting from db", err)
+		return nil, err
 	}
-	return movies
+	return movies, nil
 }
 
-func (m *Movie) GetTrendingMovies() []dtos.Movie {
-	var movies []dtos.Movie
-	movies, err := m.moviedao.GetMoviesForTrendingPage()
+func (m *Movie) GetTrendingMovies(pagination *dtos.PaginationSpecifics) ([]dtos.Movie, error) {
+
+	suggestedPostIDs, err := m.elasticDao.GetTrendingPageSortOrder(pagination.Page, pagination.Limit)
+	if err != nil {
+		m.l.Error("Failed to get the movies sort order from Elasticsearch:", err)
+		return nil, err
+	}
+	movies, err := m.moviedao.GetMoviesByPostIDs(suggestedPostIDs)
 	if err != nil {
 		m.l.Error("Faced an error while getting from db", err)
 	}
-	return movies
+	return movies, nil
 }
 
 func (m *Movie) FilterAndDigestLogIntoElasticSearch(log_entity string) error {
