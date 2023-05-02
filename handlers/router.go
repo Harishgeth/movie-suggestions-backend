@@ -10,6 +10,7 @@ import (
 	"movie-suggestions-api/utils/log"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
 )
 
 // GetRouter creates a router and registers all the routes for the
@@ -21,7 +22,14 @@ func GetRouter() http.Handler {
 	router.PanicHandler = PanicHandler
 	setMovieRoutes(router)
 
-	return router
+	// Enable CORS
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization"},
+	})
+
+	return c.Handler(router)
 }
 
 func tokenAuthentication(h httprouter.Handle) httprouter.Handle {
