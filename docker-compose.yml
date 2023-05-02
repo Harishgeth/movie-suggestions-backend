@@ -35,6 +35,8 @@ services:
             - /var/lib/docker:/var/lib/docker:ro
             - /var/run/docker.sock:/var/run/docker.sock
         command: filebeat -e -strict.perms=false
+        networks:
+            - backend
 
     vector:
         image: "timberio/vector:0.29.1-debian"

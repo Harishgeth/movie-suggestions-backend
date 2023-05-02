@@ -156,12 +156,12 @@ func (m *moviesElasticOps) GetSuggestionsPageSortOrder(userID string, page, size
 				"terms": map[string]interface{}{
 					"field": "post_id",
 					"order": map[string]interface{}{
-						"avg_duration": "desc",
+						"sum_duration": "desc",
 					},
 				},
 				"aggs": map[string]interface{}{
-					"avg_duration": map[string]interface{}{
-						"avg": map[string]interface{}{
+					"sum_duration": map[string]interface{}{
+						"sum": map[string]interface{}{
 							"field": "duration_of_scroll",
 						},
 					},
@@ -205,6 +205,7 @@ func (m *moviesElasticOps) GetSuggestionsPageSortOrder(userID string, page, size
 		postID := bucket.(map[string]interface{})["key"].(string)
 		postIDs = append(postIDs, postID)
 	}
+	m.l.Debug("The suggested sort order postIDs: ", postIDs)
 
 	return postIDs, nil
 }
@@ -226,12 +227,12 @@ func (m *moviesElasticOps) GetTrendingPageSortOrder(page, size int) ([]string, e
 				"terms": map[string]interface{}{
 					"field": "post_id",
 					"order": map[string]interface{}{
-						"avg_duration": "desc",
+						"sum_duration": "desc",
 					},
 				},
 				"aggs": map[string]interface{}{
-					"avg_duration": map[string]interface{}{
-						"avg": map[string]interface{}{
+					"sum_duration": map[string]interface{}{
+						"sum": map[string]interface{}{
 							"field": "duration_of_scroll",
 						},
 					},
@@ -275,6 +276,8 @@ func (m *moviesElasticOps) GetTrendingPageSortOrder(page, size int) ([]string, e
 		postID := bucket.(map[string]interface{})["key"].(string)
 		postIDs = append(postIDs, postID)
 	}
+
+	m.l.Debug("The trending sort order postIDs: ", postIDs)
 
 	return postIDs, nil
 }
