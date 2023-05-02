@@ -76,5 +76,16 @@ func (dao Movie) GetMoviesByPostIDs(postIDs []string) ([]dtos.Movie, error) {
 		panic(err)
 	}
 
-	return res, nil
+	resMap := make(map[string]dtos.Movie)
+	for i := 0; i < len(res); i++ {
+		resMap[res[i].MovieID] = res[i]
+	}
+	sortedRes := []dtos.Movie{}
+	for i := 0; i < len(postIDs); i++ {
+		if movie, ok := resMap[postIDs[i]]; ok {
+			sortedRes = append(sortedRes, movie)
+		}
+	}
+
+	return sortedRes, nil
 }
