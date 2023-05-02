@@ -15,6 +15,8 @@ import (
 type MovieElasticDao interface {
 	CreateMovieIndexIfNotExists() error
 	PutDataInElasticSearch(scrollData *dtos.ScrollDataCaptured) error
+	GetSuggestionsPageSortOrder(userID string, page, size int) ([]string, error)
+	GetTrendingPageSortOrder(page, size int) ([]string, error)
 }
 
 type moviesElasticOps struct {
@@ -126,4 +128,153 @@ func (m *moviesElasticOps) PutDataInElasticSearch(scrollData *dtos.ScrollDataCap
 	}
 	return nil
 
+}
+
+func (m *moviesElasticOps) GetSuggestionsPageSortOrder(userID string, page, size int) ([]string, error) {
+	// Define query parameters
+	query := map[string]interface{}{
+		"from": (page - 1) * size,
+		"size": size,
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"filter": map[string]interface{}{
+					"term": map[string]interface{}{
+						"user_id": userID,
+					},
+				},
+				"must": map[string]interface{}{
+					"range": map[string]interface{}{
+						"timestamp": map[string]interface{}{
+							"gte": "now-15d",
+						},
+					},
+				},
+			},
+		},
+		"aggs": map[string]interface{}{
+			"post": map[string]interface{}{
+				"terms": map[string]interface{}{
+					"field": "post_id",
+					"order": map[string]interface{}{
+						"avg_duration": "desc",
+					},
+				},
+				"aggs": map[string]interface{}{
+					"avg_duration": map[string]interface{}{
+						"avg": map[string]interface{}{
+							"field": "duration_of_scroll",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Encode query
+	queryBytes, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("error encoding Elasticsearch query: %v", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s/_search", config.ELASTIC_URI, config.MOVIE_INDEX), bytes.NewBuffer(queryBytes))
+	if err != nil {
+		return nil, fmt.Errorf("error creating Elasticsearch request: %v", err)
+	}
+
+	// Set request headers
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error executing Elasticsearch request: %v", err)
+	}
+	defer res.Body.Close()
+
+	// Decode response
+	var response map[string]interface{}
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("error decoding Elasticsearch response: %v", err)
+	}
+
+	// Extract post IDs
+	var postIDs []string
+	for _, bucket := range response["aggregations"].(map[string]interface{})["post"].(map[string]interface{})["buckets"].([]interface{}) {
+		postID := bucket.(map[string]interface{})["key"].(string)
+		postIDs = append(postIDs, postID)
+	}
+
+	return postIDs, nil
+}
+
+func (m *moviesElasticOps) GetTrendingPageSortOrder(page, size int) ([]string, error) {
+	// Define query parameters
+	query := map[string]interface{}{
+		"from": (page - 1) * size,
+		"size": size,
+		"query": map[string]interface{}{
+			"range": map[string]interface{}{
+				"timestamp": map[string]interface{}{
+					"gte": "now-15d",
+				},
+			},
+		},
+		"aggs": map[string]interface{}{
+			"post": map[string]interface{}{
+				"terms": map[string]interface{}{
+					"field": "post_id",
+					"order": map[string]interface{}{
+						"avg_duration": "desc",
+					},
+				},
+				"aggs": map[string]interface{}{
+					"avg_duration": map[string]interface{}{
+						"avg": map[string]interface{}{
+							"field": "duration_of_scroll",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Encode query
+	queryBytes, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("error encoding Elasticsearch query: %v", err)
+	}
+
+	// Create HTTP request
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s/_search", config.ELASTIC_URI, config.MOVIE_INDEX), bytes.NewBuffer(queryBytes))
+	if err != nil {
+		return nil, fmt.Errorf("error creating Elasticsearch request: %v", err)
+	}
+
+	// Set request headers
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error executing Elasticsearch request: %v", err)
+	}
+	defer res.Body.Close()
+
+	// Decode response
+	var response map[string]interface{}
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("error decoding Elasticsearch response: %v", err)
+	}
+
+	// Extract post IDs
+	var postIDs []string
+	for _, bucket := range response["aggregations"].(map[string]interface{})["post"].(map[string]interface{})["buckets"].([]interface{}) {
+		postID := bucket.(map[string]interface{})["key"].(string)
+		postIDs = append(postIDs, postID)
+	}
+
+	return postIDs, nil
 }
