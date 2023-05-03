@@ -1,8 +1,9 @@
-# ScrollFix (Back End)
+# ScrollFix - Backend
 <img src="https://github.com/mnguyen0226/movie-suggestions-front-end/blob/main/docs/scrollflix_logo.png" alt="alt text" width="200">
 
 
-**Scrollflix** is a single page application web app that capture users' scroll behavior on movie posts and make movie suggestion based on the posts' view duration.
+**Scrollflix** is a single page web-application that provides users curated movie recommendation based on how users interact with the landing page, which is the front page. It capture users' scroll behavior on movie posts and make movie suggestion based on the posts' view duration. This repository provides information and overview of back-end for the web application.In this repository you will all the coding from the backend and informtaion on how to run it. However, to get the web application running, front-end should be pulled too. For the application to run competely, both repository need to be pulled.
+
 
 **Related Works**
 - **ElasticSearch:** is a tool used in industry to collect data in both logged in users and site visitor.
@@ -11,12 +12,7 @@
 - **Amplitude:;** provides the API for developer to develop a product analytics dashboard to collect a user engagement data, thus they can provide data insights to stakeholders. To do this, we need to require a redesign the entire architecture from event-base system into a log-base system. What our team trying to do is to make an extension version of amplitude that is: you don't need to redesign your architecture into event base; if you know where to print the log to console.log, we can capture that and still able to use that data for content curation.
 
 
-
-## About
-Scroll-Fix is a web-application that provides users curated movie recommendation based on how users interact with the landing page, which is the front page. This repository provides information and overview of back-end for the web application.In this repository you will all the coding from the backend and informtaion on how to run it. However, to get the web application running, front-end should be pulled too. The link to the ScrollFIx(Front End) is [here](https://github.com/mnguyen0226/movie-suggestions-front-end )  
-For the application to run competely, both repository need to be pulled.
-
-
+**Frontend** code can be found [here](https://github.com/mnguyen0226/movie-suggestions-front-end).
 
 ## Demo
 Home Page
