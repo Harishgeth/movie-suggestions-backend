@@ -9,10 +9,10 @@
 - **ElasticSearch:** is a tool used in industry to collect data in both logged in users and site visitor.
 - **Facebook:** uses elasticsearch for their News Feed algorithm. By analyzing data points such as likes and content interaction the algorithm can indirectly infer users' intention and provides personal recommendation to enhanced user experience
 - **Netflix:** uses Elasticsearch to recommend content to millions of users by collects a variety of data point (viewing history, rating, scroll activity, navigation, to help users find relevant content)
-- **Amplitude:;** provides the API for developer to develop a product analytics dashboard to collect a user engagement data, thus they can provide data insights to stakeholders. To do this, we need to require a redesign the entire architecture from event-base system into a log-base system. What our team trying to do is to make an extension version of amplitude that is: you don't need to redesign your architecture into event base; if you know where to print the log to console.log, we can capture that and still able to use that data for content curation.
+- **Amplitude:** provides the API for developer to develop a product analytics dashboard to collect a user engagement data, thus they can provide data insights to stakeholders. To do this, we need to require a redesign the entire architecture from event-base system into a log-base system. What our team trying to do is to make an extension version of amplitude that is: you don't need to redesign your architecture into event base; if you know where to print the log to console.log, we can capture that and still able to use that data for content curation.
 
 
-**Frontend** code can be found [here](https://github.com/mnguyen0226/movie-suggestions-front-end).
+**Frontend** code can be found [here](https://github.com/mnguyen0226/movie-suggestions-frontend).
 
 ## Demo
 Home Page
