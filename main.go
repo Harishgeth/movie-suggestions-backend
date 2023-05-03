@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"movie-suggestions-api/config"
+	"movie-suggestions-api/daos"
 	elasticDao "movie-suggestions-api/elasticdao"
 	"movie-suggestions-api/handlers"
 	"movie-suggestions-api/utils/log"
@@ -12,6 +13,7 @@ import (
 func main() {
 
 	l := log.NewLogger("")
+	daos.Init(l)
 	elasticDao := elasticDao.GetMovieDao(l)
 	err := elasticDao.CreateMovieIndexIfNotExists()
 	if err != nil {
