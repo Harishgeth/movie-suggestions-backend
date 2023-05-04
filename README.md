@@ -14,6 +14,8 @@
 
 **Frontend** code can be found [here](https://github.com/mnguyen0226/movie-suggestions-frontend).
 
+**IMDb Scraper** code can be found [here](https://github.com/Harishgeth/imdb-scraping).
+
 ## Demo
 Home Page
 <br/>
