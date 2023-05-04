@@ -83,12 +83,26 @@ Please ensure the following ports are available, [if not kill applications runni
 
 Ports required by applications to be brought up - 9200:Elasticsearch, 5601:Kibana, 3000-Golang, 27018 - MongoDB.
 
-
-    
-
 5. Pull the front-end code from [here.](https://github.com/mnguyen0226/movie-suggestions-frontend)
 
 6. Follow the instructions in the frontend repository to run it, and it should automatically recognize the backend.
+
+Clone the github repository
+
+Install Vue CLI
+```sh
+npm install @vue/cli
+```
+
+Create a Vue project
+```sh
+vue create .
+```
+
+Run Vue single-page application
+```sh
+npm run serve
+```
 
 7. You can checkout the elasticsearch data at Kibana which runs in the [url.](http://localhost:5601/app/kibana). There are two index pattern of interest.
 
@@ -97,6 +111,7 @@ Operational Excellence Logs - filebeat*
 Movie curation Index - movie*
 
 Use the Discover tab of Analytics to create a data view with these index patterns described above to see the data :)
+
 ## Unit Test
 
 ## Tools
